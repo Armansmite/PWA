@@ -1,4 +1,9 @@
-import os, json, time, base64, io, urllib.request
+import os
+import json
+import time
+import base64
+import io
+import urllib.request
 from flask import Flask, request, jsonify, send_file, Response
 import requests as http_requests
 
@@ -41,10 +46,8 @@ images_zip = None
 music_zip = None
 log_messages = []
 oauth_flow = None
-
 colab_connected = False
 last_heartbeat = 0
-processing_command = False
 
 # ---------- CORS ----------
 @app.after_request
@@ -212,16 +215,7 @@ def handle_log():
         return jsonify({'status': 'ok'})
     return jsonify(log_messages)
 
-# ---------- COMMAND (backward compatibility) ----------
-@app.route('/api/command')
-def get_command():
-    global processing_command
-    if processing_command:
-        processing_command = False
-        return jsonify({'command': 'start'})
-    return jsonify({'command': 'none'})
-
-# ---------- RUN BOT – Codespaces creation (NO machine type) ----------
+# ---------- RUN BOT (Codespaces creation with corrected envs) ----------
 @app.route('/api/run', methods=['POST'])
 def run_bot():
     gh_token = os.environ.get('GH_TOKEN')
@@ -235,16 +229,15 @@ def run_bot():
         "Content-Type": "application/json"
     }
 
-    # Create Codespace without specifying a machine (GitHub picks the default)
+    # Create Codespace – envs must be an array of objects
     create_data = {
         "ref": "main",
-        "envs": {
-            "DASHBOARD_URL": "https://pwa-gqoh.onrender.com",
-            "CODESPACE_NAME": "",
-            "GITHUB_TOKEN": gh_token,
-            "GITHUB_REPOSITORY": repo,
-            "TRIGGER_WORKER": "true"
-        }
+        "envs": [
+            {"name": "DASHBOARD_URL", "value": "https://pwa-gqoh.onrender.com"},
+            {"name": "GITHUB_TOKEN", "value": gh_token},
+            {"name": "GITHUB_REPOSITORY", "value": repo},
+            {"name": "TRIGGER_WORKER", "value": "true"}
+        ]
     }
     try:
         create_resp = http_requests.post(
@@ -271,7 +264,7 @@ def run_bot():
     else:
         return jsonify({'status': 'error', 'message': 'Codespace not ready within timeout'}), 500
 
-    # Execute the worker script
+    # Run worker script
     run_url = f"https://api.github.com/repos/{repo}/codespaces/{cs_name}/run"
     run_data = {"command": "python worker_codespaces.py"}
     rr = http_requests.post(run_url, json=run_data, headers=headers)
@@ -280,7 +273,7 @@ def run_bot():
 
     return jsonify({'status': 'ok', 'message': f'Worker started in Codespace {cs_name}'})
 
-# ---------- THE COMPLETE DASHBOARD HTML ----------
+# ---------- THE COMPLETE DASHBOARD HTML (identical to last working version) ----------
 DASHBOARD_HTML = r"""
 <!DOCTYPE html>
 <html lang="en">
