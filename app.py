@@ -18,13 +18,15 @@ def load_configs():
         with urllib.request.urlopen(CONFIGS_URL) as resp:
             cached_configs = json.load(resp)
     except Exception:
-        cached_configs = [{"id": "classic", "name": "Classic V1", "file": "classic.py",
-                           "settings": {
-                               "total_duration": {"default": 7, "type": "number", "min": 5, "max": 15, "label": "Duration (seconds)"},
-                               "fade_duration": {"default": 2, "type": "number", "min": 0.5, "max": 3, "step": 0.1, "label": "Fade‑in (seconds)"},
-                               "max_quote_len": {"default": 50, "type": "number", "min": 30, "max": 100, "label": "Max Quote Length"},
-                               "min_quote_len": {"default": 0, "type": "number", "min": 0, "max": 200, "label": "Min Quote Length"}
-                           }}]
+        cached_configs = [{
+            "id": "classic", "name": "Classic V1", "file": "classic.py",
+            "settings": {
+                "total_duration": {"default": 7, "type": "number", "min": 5, "max": 15, "label": "Duration (seconds)"},
+                "fade_duration": {"default": 2, "type": "number", "min": 0.5, "max": 3, "step": 0.1, "label": "Fade‑in (seconds)"},
+                "max_quote_len": {"default": 50, "type": "number", "min": 30, "max": 100, "label": "Max Quote Length"},
+                "min_quote_len": {"default": 0, "type": "number", "min": 0, "max": 200, "label": "Min Quote Length"}
+            }
+        }]
 
 load_configs()
 
@@ -56,10 +58,12 @@ def add_cors(response):
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     return response
 
-# ---------- FRONTEND (separate file) ----------
+# ---------- FRONTEND (with fallback) ----------
 @app.route('/')
 def index():
-    return send_file('dashboard.html')
+    if os.path.exists("dashboard.html"):
+        return send_file("dashboard.html")
+    return "<h2>dashboard.html not found – please upload it alongside app.py</h2>"
 
 # ---------- SETTINGS ----------
 @app.route('/api/settings', methods=['GET', 'POST'])
@@ -81,7 +85,7 @@ def handle_settings():
 def list_configs():
     return jsonify(cached_configs)
 
-# ---------- DYNAMIC CONFIG SETTINGS WITH FALLBACK ----------
+# ---------- DYNAMIC CONFIG SETTINGS (with fallback) ----------
 @app.route('/api/config-settings/<config_id>')
 def config_settings(config_id):
     config_entry = next((c for c in cached_configs if c["id"] == config_id), None)
