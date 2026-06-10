@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Shorts Bot V5.1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a1a;
+      --surface: rgba(20, 20, 40, 0.75);
+      --primary: #7c5dfa;
+      --primary-hover: #6a4cf0;
+      --accent: #00d4aa;
+      --danger: #ff4d6a;
+      --text: #eaeaea;
+      --muted: #a0a0b0;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: linear-gradient(145deg, #0a0a1a 0%, #1a0a2e 100%);
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+      min-height: 100vh;
+      align-items: flex-start;
+    }
+    .container {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 28px;
+      padding: 20px 18px 25px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+      margin: 10px 0;
+    }
+    h1, h2, h3 { color: var(--text); }
+    input, textarea, select, button {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: white;
+      padding: 11px 14px;
+      font-size: 0.92rem;
+      width: 100%;
+      transition: 0.2s;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+    }
+    select option { background: #1a1a2e; color: white; }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(124,93,250,0.2); }
+    button {
+      background: var(--primary);
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 14px rgba(124,93,250,0.3);
+      padding: 12px 18px;
+      font-size: 0.9rem;
+    }
+    button:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 8px 22px rgba(124,93,250,0.4); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; background: rgba(255,255,255,0.04); padding: 5px; border-radius: 14px; margin: 18px 0 22px; }
+    .tab { flex: 1 1 auto; padding: 10px 6px; text-align: center; cursor: pointer; border-radius: 10px; font-weight: 500; font-size: 0.8rem; transition: all 0.3s; color: var(--muted); white-space: nowrap; }
+    .tab.active { background: var(--primary); color: white; box-shadow: 0 8px 20px -8px var(--primary); }
+    .tab:not(.active):hover { background: rgba(255,255,255,0.06); color: white; }
+    .panel { background: rgba(255,255,255,0.02); border-radius: var(--radius); padding: 20px 16px; border: 1px solid rgba(255,255,255,0.05); display: none; animation: fade 0.3s ease; }
+    .panel.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .card { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 140px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--muted); font-size: 0.82rem; }
+    .log-box { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 14px; height: 280px; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 0.78rem; white-space: pre-wrap; line-height: 1.5; border: 1px solid rgba(255,255,255,0.05); }
+    .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 0.72rem; margin-left: 6px; }
+    .badge-green { background: #00c853; color: white; }
+    .badge-yellow { background: #ffd600; color: black; }
+    .badge-red { background: #ff1744; color: white; }
+    .inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .mt-1 { margin-top: 10px; }
+    .mt-2 { margin-top: 18px; }
+    .time-slot-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .time-slot-row input { width: 110px; }
+    .time-slot-row button { background: rgba(255,77,106,0.2); border: 1px solid rgba(255,77,106,0.3); padding: 7px 10px; font-size: 0.8rem; box-shadow: none; width: auto; }
+    .time-slot-row button:hover { background: var(--danger); }
+    .add-btn { background: var(--accent) !important; box-shadow: 0 4px 14px rgba(0,212,170,0.3) !important; margin-top: 8px; }
+    .add-btn:hover { background: #00e6b0 !important; }
+    .auth-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+    .auth-overlay h2 { margin-bottom: 20px; background: linear-gradient(135deg, #7c5dfa, #00d4aa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2rem; }
+    .auth-form { width: 100%; max-width: 320px; }
+    .auth-form input { margin-bottom: 12px; }
+    .auth-buttons { display: flex; gap: 12px; }
+    .auth-message { margin-top: 15px; font-size: 0.9rem; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <!-- Login Overlay -->
+    <div id="auth-overlay" class="auth-overlay">
+      <h2>🎬 Shorts Bot</h2>
+      <div class="auth-form">
+        <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+        <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
+        <div class="auth-buttons">
+          <button id="login-btn" onclick="login()">Log In</button>
+          <button id="signup-btn" onclick="signup()" style="background: var(--accent);">Sign Up</button>
+        </div>
+        <p id="auth-message" class="auth-message"></p>
+      </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-panel" class="hidden">
+      <h1>🎬 Shorts Bot V5.1</h1>
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('settings')">⚙️ Settings</div>
+        <div class="tab" onclick="switchTab('auth')">🔐 Auth</div>
+        <div class="tab" onclick="switchTab('run')">🚀 Run</div>
+        <div class="tab" onclick="switchTab('log')">📋 Log</div>
+        <div class="tab" onclick="logout()" style="background:var(--danger);">🚪 Logout</div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="panel-settings" class="panel active">
+        <div class="card">
+          <h3>🎨 Video Style</h3>
+          <select id="active_config" onchange="onConfigChange()">
+            <option value="classic">Loading...</option>
+          </select>
+          <p class="mt-1" style="font-size:0.75rem;">Select the video preset – controls will update automatically.</p>
+        </div>
+        <div class="card" id="configSettingsCard">
+          <h3>⏱️ Video Settings</h3>
+          <div id="configSettingsContainer"></div>
+        </div>
+        <div class="card">
+          <h3>📅 Upload Slots (UTC)</h3>
+          <div id="slotsContainer"></div>
+          <button type="button" class="add-btn" onclick="addSlot()">+ Add Slot</button>
+        </div>
+        <div class="card">
+          <h3>🏷️ Tags & Description</h3>
+          <label>Base Tags (comma separated)</label>
+          <input type="text" id="base_tags" value="shorts, quotes, motivation, wisdom">
+          <label class="mt-1">Extra Description Line</label>
+          <textarea id="description_extra" rows="2">💡 Quote of the day | Motivational quotes | Motivational speech | Motivational video | Understanding politics</textarea>
+          <label class="mt-1">Category ID</label>
+          <input type="text" id="category_id" value="22">
+        </div>
+        <div class="card">
+          <h3>Limit</h3>
+          <label>Max Videos (0 = unlimited)</label>
+          <input type="number" id="max_videos" value="0" min="0" max="1000">
+        </div>
+        <button type="button" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+
+      <!-- Auth Panel -->
+      <div id="panel-auth" class="panel">
+        <div class="card">
+          <h3>1. Upload client_secret.json</h3>
+          <input type="file" id="client_secret_file" accept=".json">
+          <button type="button" onclick="uploadClientSecret()" class="mt-1">Upload</button>
+          <span id="uploadStatus"></span>
+        </div>
+        <div class="card">
+          <h3>2. Authorize</h3>
+          <div class="inline mt-1">
+            <input type="text" id="auth_url" readonly placeholder="URL will appear...">
+            <button type="button" onclick="copyAuthUrl()" style="width:auto;">📋</button>
+          </div>
+          <div class="inline mt-1">
+            <input type="text" id="auth_code" placeholder="Paste code or full redirect URL">
+            <button type="button" onclick="authenticate()" style="width:auto;">🔑</button>
+          </div>
+          <span id="authStatus"></span>
+        </div>
+        <div class="card" id="downloadConfigCard" style="display:none;">
+          <h3>✅ Done! Download your config file:</h3>
+          <button type="button" onclick="downloadConfigAfterAuth()">📥 Download Config</button>
+          <p class="mt-1">Keep this file – you can re‑upload it later to skip steps 1 & 2.</p>
+        </div>
+        <div class="card">
+          <h3>Token Status</h3>
+          <div id="tokenStatus" class="status-badge badge-red">No token</div>
+        </div>
+      </div>
+
+      <!-- Run Panel -->
+      <div id="panel-run" class="panel">
+        <div class="card">
+          <h3>Bot Control</h3>
+          <p id="botStatus" style="margin-bottom:12px;">Ready to trigger the workflow.</p>
+          <div style="display:flex; gap:10px;">
+            <button type="button" id="startBtn" onclick="startBot()" style="flex:1;">▶️ Start Processing</button>
+            <button type="button" id="cancelBtn" onclick="cancelBot()" style="flex:1; background:var(--danger);" disabled>⏹️ Cancel</button>
+          </div>
+          <p class="mt-1" style="font-size:0.75rem;">Cancel stops the currently running GitHub Actions workflow.</p>
+        </div>
+        <div class="card">
+          <h3>Live Log</h3>
+          <div class="log-box" id="logBox"></div>
+          <button type="button" onclick="refreshLog()" class="mt-1">🔄 Refresh Log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://lotfvavhsbxcyduxmaat.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvdGZ2YXZoc2J4Y3lkdXhtYWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwODA4MjEsImV4cCI6MjA5NjY1NjgyMX0.zeZwTDpmv_t0b5f07iOb2SP-c7OO8UoiToaLZFCnDvs';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let authToken = null;
+
+    function showMessage(msg, isError = false) {
+      const el = document.getElementById('auth-message');
+      if (el) { el.textContent = msg; el.style.color = isError ? 'var(--danger)' : 'var(--accent)'; }
+    }
+
+    // ========== LOGIN / SIGNUP ==========
+    async function signup() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) { showMessage('Please fill in both fields.', true); return; }
+      showMessage('');
+      document.getElementById('signup-btn').disabled = true;
+      const { error } = await supabase.auth.signUp({ email, password });
+      document.getElementById('signup-btn').disabled = false;
+      if (error) showMessage(error.message, true);
+      else showMessage('✅ Signup successful! You can now log in.');
+    }
+
+    async function login() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      if (!email || !password) { showMessage('Please fill in both fields.', true); return; }
+      showMessage('');
+      document.getElementById('login-btn').disabled = true;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      document.getElementById('login-btn').disabled = false;
+      if (error) {
+        if (error.message.includes('Email not confirmed'))
+          showMessage('❌ Email not confirmed. Turn off email confirmation in Supabase settings.', true);
+        else showMessage(error.message, true);
+      } else {
+        authToken = data.session.access_token;
+        localStorage.setItem('authToken', authToken);
+        showDashboard();
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('auth-overlay').classList.add('hidden');
+      document.getElementById('main-panel').classList.remove('hidden');
+      loadConfigList();
+      updateRunStatus();
+      refreshLog();
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      authToken = null;
+      localStorage.removeItem('authToken');
+      document.getElementById('auth-overlay').classList.remove('hidden');
+      document.getElementById('main-panel').classList.add('hidden');
+      document.getElementById('auth-email').value = '';
+      document.getElementById('auth-password').value = '';
+      showMessage('');
+    }
+
+    // Auto-login check
+    (async () => {
+      const savedToken = localStorage.getItem('authToken');
+      if (savedToken) {
+        const { data: { user }, error } = await supabase.auth.getUser(savedToken);
+        if (user && !error) {
+          authToken = savedToken;
+          showDashboard();
+        } else {
+          localStorage.removeItem('authToken');
+        }
+      }
+    })();
+
+    // ========== API HELPER ==========
+    function apiFetch(url, options = {}) {
+      if (!authToken) {
+        // If token is missing, force logout
+        logout();
+        return Promise.reject('Not authenticated');
+      }
+      options.headers = options.headers || {};
+      options.headers['Authorization'] = 'Bearer ' + authToken;
+      return fetch(url, options);
+    }
+
+    // ========== DASHBOARD FUNCTIONS ==========
+    let timeSlots = ["05:30", "11:30", "17:30", "23:30"];
+    function renderSlots() {
+      const container = document.getElementById('slotsContainer');
+      container.innerHTML = timeSlots.map((slot, i) => `
+        <div class="time-slot-row">
+          <input type="time" value="${slot}" onchange="updateSlot(${i}, this.value)">
+          <button type="button" onclick="removeSlot(${i})" style="width:auto;">✕</button>
+        </div>`).join('');
+    }
+    function addSlot() { timeSlots.push("12:00"); renderSlots(); }
+    function removeSlot(i) { if (timeSlots.length<=1) return; timeSlots.splice(i,1); renderSlots(); }
+    function updateSlot(i, v) { timeSlots[i] = v; }
+    renderSlots();
+
+    function switchTab(tab) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('panel-'+tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    let currentConfigId = 'classic';
+    let currentSettingsDef = {};
+    let savedConfigValues = {};
+
+    async function loadConfigList() {
+      const r = await apiFetch('/api/configs');
+      const configs = await r.json();
+      const sel = document.getElementById('active_config');
+      sel.innerHTML = configs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      await loadConfigSettings();
+    }
+
+    async function loadConfigSettings() {
+      const settingsResp = await apiFetch('/api/settings');
+      const settings = await settingsResp.json();
+      currentConfigId = settings.active_config || 'classic';
+      savedConfigValues = settings.current_config_settings || {};
+      document.getElementById('active_config').value = currentConfigId;
+      await renderConfigSettings(currentConfigId);
+    }
+
+    async function onConfigChange() {
+      const newConfig = document.getElementById('active_config').value;
+      const settingsResp = await apiFetch('/api/settings');
+      const settings = await settingsResp.json();
+      savedConfigValues = settings.current_config_settings || {};
+      currentConfigId = newConfig;
+      await renderConfigSettings(newConfig);
+    }
+
+    async function renderConfigSettings(configId) {
+      try {
+        const r = await apiFetch(`/api/config-settings/${configId}`);
+        if (!r.ok) throw new Error('Fetch failed');
+        const def = await r.json();
+        currentSettingsDef = def;
+        const container = document.getElementById('configSettingsContainer');
+        container.innerHTML = '';
+        for (const [key, info] of Object.entries(def)) {
+          const val = savedConfigValues[key] !== undefined ? savedConfigValues[key] : info.default;
+          let inputHtml = '';
+          const step = info.step !== undefined ? `step="${info.step}"` : '';
+          const min = info.min !== undefined ? `min="${info.min}"` : '';
+          const max = info.max !== undefined ? `max="${info.max}"` : '';
+          if (info.type === 'number') {
+            inputHtml = `<input type="number" id="cfg_${key}" value="${val}" ${min} ${max} ${step}>`;
+          } else if (info.type === 'text' || info.type === 'string') {
+            inputHtml = `<input type="text" id="cfg_${key}" value="${val}">`;
+          } else if (info.type === 'select') {
+            const opts = (info.options || []).map(o => `<option value="${o.value}" ${o.value == val ? 'selected' : ''}>${o.label}</option>`).join('');
+            inputHtml = `<select id="cfg_${key}">${opts}</select>`;
+          } else if (info.type === 'textarea') {
+            inputHtml = `<textarea id="cfg_${key}" rows="${info.rows || 2}">${val}</textarea>`;
+          }
+          container.innerHTML += `<div style="margin-bottom:10px;"><label>${info.label}</label>${inputHtml}</div>`;
+        }
+      } catch (e) {
+        document.getElementById('configSettingsContainer').innerHTML = '<p style="color:var(--danger)">Could not load settings definition.</p>';
+      }
+    }
+
+    function saveSettings() {
+      const data = {
+        max_videos: +document.getElementById('max_videos').value,
+        slots: timeSlots,
+        base_tags: document.getElementById('base_tags').value,
+        description_extra: document.getElementById('description_extra').value,
+        category_id: document.getElementById('category_id').value,
+        active_config: currentConfigId,
+        config_settings: {}
+      };
+      const configValues = {};
+      for (const key of Object.keys(currentSettingsDef)) {
+        const el = document.getElementById(`cfg_${key}`);
+        if (el) {
+          const val = el.type === 'number' ? parseFloat(el.value) : el.value;
+          configValues[key] = val;
+        }
+      }
+      data.config_settings[currentConfigId] = configValues;
+      apiFetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => alert('Settings saved!'));
+    }
+
+    // ========== YouTube Auth ==========
+    async function uploadClientSecret() {
+      const file = document.getElementById('client_secret_file').files[0];
+      if (!file) return alert('Choose a file');
+      const fd = new FormData(); fd.append('file', file);
+      try {
+        const r = await apiFetch('/api/auth/upload_client_secret', { method:'POST', body:fd });
+        const d = await r.json();
+        if (d.auth_url) {
+          document.getElementById('auth_url').value = d.auth_url;
+          document.getElementById('uploadStatus').innerHTML = '<span class="status-badge badge-green">✅ Ready</span>';
+        } else {
+          document.getElementById('uploadStatus').innerHTML = '<span class="status-badge badge-red">❌ '+d.error+'</span>';
+        }
+      } catch(e) {
+        document.getElementById('uploadStatus').innerHTML = '<span class="status-badge badge-red">❌ Not logged in</span>';
+      }
+    }
+    function copyAuthUrl() { const inp = document.getElementById('auth_url'); inp.select(); document.execCommand('copy'); }
+    let latestConfig = null;
+    async function authenticate() {
+      let code = document.getElementById('auth_code').value.trim();
+      if (!code) return alert('Paste code first');
+      try {
+        const r = await apiFetch('/api/auth/authenticate', {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code})
+        });
+        const d = await r.json();
+        if (d.status==='authenticated') {
+          document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-green">✅ Authenticated</span>';
+          latestConfig = d.config;
+          document.getElementById('downloadConfigCard').style.display = 'block';
+          updateTokenStatus();
+        } else {
+          document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-red">❌ '+d.error+'</span>';
+        }
+      } catch(e) {
+        document.getElementById('authStatus').innerHTML = '<span class="status-badge badge-red">❌ Network error</span>';
+      }
+    }
+    function downloadConfigAfterAuth() {
+      if (!latestConfig) return;
+      const blob = new Blob([JSON.stringify(latestConfig, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'shorts_bot_config.json'; a.click();
+    }
+    function updateTokenStatus() {
+      apiFetch('/api/auth/status').then(r => r.json()).then(d => {
+        const el = document.getElementById('tokenStatus');
+        if (d.status==='valid') { el.className='status-badge badge-green'; el.textContent='Token valid'; }
+        else if (d.status==='expired_refreshable') { el.className='status-badge badge-yellow'; el.textContent='Expired (refreshable)'; }
+        else { el.className='status-badge badge-red'; el.textContent='No token'; }
+      });
+    }
+    setInterval(updateTokenStatus, 30000); updateTokenStatus();
+
+    // ========== Run & Cancel ==========
+    function startBot() {
+      apiFetch('/api/run', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.status === 'ok') alert(d.message);
+          else alert('Error: ' + d.message);
+        });
+    }
+    function updateRunStatus() {
+      apiFetch('/api/run-status')
+        .then(r => r.json())
+        .then(d => {
+          const cancelBtn = document.getElementById('cancelBtn');
+          if (d.running) {
+            cancelBtn.disabled = false;
+            document.getElementById('botStatus').innerHTML = '🟢 Workflow is running...';
+          } else {
+            cancelBtn.disabled = true;
+            document.getElementById('botStatus').innerHTML = 'Ready to trigger the workflow.';
+          }
+        });
+    }
+    setInterval(updateRunStatus, 10000);
+    function cancelBot() {
+      if (!confirm('Are you sure you want to cancel the running workflow?')) return;
+      apiFetch('/api/cancel', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.status === 'ok') alert('Workflow cancelled successfully.');
+          else alert('Error: ' + d.message);
+        });
+    }
+
+    // ========== Logs ==========
+    function refreshLog() {
+      apiFetch('/api/log').then(r => r.json()).then(lines => {
+        document.getElementById('logBox').textContent = lines.join('\n');
+      });
+    }
+    setInterval(refreshLog, 5000);
+  </script>
+</body>
+</html>
