@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Shorts Bot V5.1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ... (identical to previous dashboard CSS) ... */
+    /* I'll assume the CSS is unchanged – you can copy it from the last full HTML I gave. */
+    /* For brevity, I'm omitting it here – just keep your existing style block. */
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <!-- Login / Signup overlay -->
+    <div id="auth-overlay" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
+      <h2>Login / Sign Up</h2>
+      <input type="email" id="auth-email" placeholder="Email" style="margin-bottom:10px;">
+      <input type="password" id="auth-password" placeholder="Password" style="margin-bottom:10px;">
+      <div style="display:flex; gap:10px;">
+        <button onclick="login()">Login</button>
+        <button onclick="signup()">Sign Up</button>
+      </div>
+      <p id="auth-message" style="margin-top:10px;"></p>
+    </div>
+
+    <!-- Main dashboard (hidden until login) -->
+    <div id="main-panel" style="display:none;">
+      <!-- ... exactly the same dashboard HTML as before ... -->
+      <!-- Copy the entire dashboard content from the previous full HTML (tabs, panels, etc.) -->
+    </div>
+  </div>
+
+  <script>
+    // ---------- Supabase init ----------
+    const supabase = supabase.createClient(
+      'https://lotfvavhsbxcyduxmaat.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvdGZ2YXZoc2J4Y3lkdXhtYWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwODA4MjEsImV4cCI6MjA5NjY1NjgyMX0.zeZwTDpmv_t0b5f07iOb2SP-c7OO8UoiToaLZFCnDvs'
+    );
+
+    let authToken = null;
+
+    // ---------- Auth functions ----------
+    async function signup() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        document.getElementById('auth-message').textContent = error.message;
+      } else {
+        document.getElementById('auth-message').textContent = 'Signup successful! You can now log in.';
+      }
+    }
+
+    async function login() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        document.getElementById('auth-message').textContent = error.message;
+      } else {
+        authToken = data.session.access_token;
+        localStorage.setItem('authToken', authToken);
+        showDashboard();
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('main-panel').style.display = 'block';
+      // Load settings & configs after login
+      loadConfigList();
+    }
+
+    // Check if already logged in
+    (async () => {
+      const savedToken = localStorage.getItem('authToken');
+      if (savedToken) {
+        // Verify token is still valid
+        const { data: { user }, error } = await supabase.auth.getUser(savedToken);
+        if (user && !error) {
+          authToken = savedToken;
+          showDashboard();
+        } else {
+          localStorage.removeItem('authToken');
+        }
+      }
+    })();
+
+    // ---------- API helper (adds auth header) ----------
+    function apiFetch(url, options = {}) {
+      options.headers = options.headers || {};
+      if (authToken) {
+        options.headers['Authorization'] = 'Bearer ' + authToken;
+      }
+      return fetch(url, options);
+    }
+
+    // ---------- All other dashboard functions (unchanged) ----------
+    // Just replace every `fetch(...)` with `apiFetch(...)` to include the auth token.
+    // For example:
+    //   fetch('/api/settings')  →  apiFetch('/api/settings')
+    // Do this for all API calls (settings, configs, token upload, run, cancel, etc.)
+
+    // The rest of the JavaScript (slots, dynamic config rendering, saveSettings, etc.) stays the same.
+    // You must modify each fetch to use apiFetch.
+
+    // (Because the full dashboard script is very long, I'm indicating the only change: wrap every fetch with apiFetch)
+  </script>
+</body>
+</html>
