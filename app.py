@@ -85,13 +85,15 @@ def supabase_delete(table, user_id):
 
 # ---------- AUTH ----------
 def get_user_id_for_request():
+    # Bot worker
     if request.headers.get("X-Bot-Secret") == BOT_SECRET:
         return BOT_USER_ID
+    # Normal user – use the ANON key to validate JWT
     auth = request.headers.get("Authorization", "").replace("Bearer ", "")
     if auth:
         r = http_requests.get(
             f"{SUPABASE_URL}/auth/v1/user",
-            headers={"apikey": SUPABASE_SERVICE_KEY, "Authorization": f"Bearer {auth}"}
+            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {auth}"}
         )
         if r.status_code == 200:
             return r.json()["id"]
